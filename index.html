@@ -793,9 +793,10 @@ total += subtotal;
 return `• ${plant.name} x${qty} = $${subtotal.toLocaleString('es-CL')}`;
 }).join('%0A');
 
-const text = `🌿 Hola, quiero realizar el siguiente pedido:%0A%0A${products}%0A%0A💰 Total: $${total.toLocaleString('es-CL')}%0A%0A📍 Vivero Raíces de Petorca`;
+const text = '🌿 Hola, quiero realizar el siguiente pedido:%0A%0A' + products + '%0A%0A💰 Total: $' + total.toLocaleString('es-CL') + '%0A%0A📍 Vivero Raíces de Petorca';
 
-window.open(`https://wa.me/56971505118?text=${text}`,'_blank');
+const waURL = 'https://wa.me/56971505118?text=' + text;
+window.open(waURL, '_blank');
 }
 
 function showToast(){
