@@ -585,10 +585,19 @@ Selección premium de plantas de interior, aromáticas, flores y suculentas cult
 <p>© 2026 Todos los derechos reservados.</p>
 </footer>
 
-<button class="cart-btn" id="cartBtn">
+<button class="cart-btn" id="cartBtn" onclick="toggleCart()">
 🛒
 <div class="cart-count" id="cartCount">0</div>
 </button>
+
+<div id="cartModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:2000;padding:1rem;">
+<div style="background:white;width:100%;max-width:520px;border-radius:24px;padding:2rem;max-height:90vh;overflow:auto;position:relative;">
+<button onclick="toggleCart()" style="position:absolute;top:14px;right:18px;border:none;background:none;font-size:1.4rem;cursor:pointer;">✕</button>
+<h2 style="font-family:'Cormorant Garamond',serif;color:#1a3d2b;margin-bottom:1.5rem;">🛒 Mi carrito</h2>
+<div id="cartItems"></div>
+<div id="cartTotal" style="margin-top:1.5rem;"></div>
+</div>
+</div>
 
 <div class="toast" id="toast">🌱 Producto agregado</div>
 
@@ -656,7 +665,7 @@ desc:'Hierba aromática mediterránea ideal para cocina.'
 }
 ];
 
-let cart = 0;
+let cart = {};
 let activeFilter = 'all';
 
 const plantsGrid = document.getElementById('plantsGrid');
@@ -687,17 +696,106 @@ ${p.tags.map(tag=>`<span class="tag">${tag}</span>`).join('')}
 <div class="plant-desc">${p.desc}</div>
 <div class="plant-bottom">
 <div class="price">$${p.price.toLocaleString('es-CL')}</div>
-<button class="add-btn" onclick="addToCart()">+</button>
+<button class="add-btn" onclick="addToCart(${p.id})">+</button>
 </div>
 </div>
 </div>
 `).join('');
 }
 
-function addToCart(){
-cart++;
-cartCount.textContent = cart;
+function addToCart(id){
+if(!cart[id]){
+cart[id]=1;
+}else{
+cart[id]++;
+}
+updateCartCount();
 showToast();
+renderCart();
+}
+
+function updateCartCount(){
+const total = Object.values(cart).reduce((a,b)=>a+b,0);
+cartCount.textContent = total;
+}
+
+function renderCart(){
+const cartItems = document.getElementById('cartItems');
+const cartTotal = document.getElementById('cartTotal');
+
+const entries = Object.entries(cart);
+
+if(entries.length === 0){
+cartItems.innerHTML = '<p style="color:#6b7280">Tu carrito está vacío 🌱</p>';
+cartTotal.innerHTML = '';
+return;
+}
+
+let total = 0;
+
+cartItems.innerHTML = entries.map(([id,qty])=>{
+const plant = plants.find(p=>p.id == id);
+const subtotal = plant.price * qty;
+total += subtotal;
+
+return `
+<div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #e5e7eb;">
+<img src="${plant.img}" style="width:70px;height:70px;object-fit:cover;border-radius:14px;">
+<div style="flex:1;">
+<div style="font-weight:700;">${plant.name}</div>
+<div style="color:#40916c;font-weight:700;">$${subtotal.toLocaleString('es-CL')}</div>
+<div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:center;">
+<button onclick="changeQty(${id},-1)" style="width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;">−</button>
+<span>${qty}</span>
+<button onclick="changeQty(${id},1)" style="width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;">+</button>
+</div>
+</div>
+</div>
+`;
+}).join('');
+
+cartTotal.innerHTML = `
+<div style="display:flex;justify-content:space-between;font-size:1.2rem;font-weight:700;margin-bottom:1rem;">
+<span>Total</span>
+<span>$${total.toLocaleString('es-CL')}</span>
+</div>
+<button onclick="sendWhatsAppOrder()" style="width:100%;padding:1rem;border:none;border-radius:999px;background:#25d366;color:white;font-weight:700;font-size:1rem;cursor:pointer;">
+💬 Pedir por WhatsApp
+</button>
+`;
+}
+
+function changeQty(id,delta){
+cart[id] += delta;
+if(cart[id] <= 0){
+delete cart[id];
+}
+updateCartCount();
+renderCart();
+}
+
+function toggleCart(){
+const modal = document.getElementById('cartModal');
+modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+renderCart();
+}
+
+function sendWhatsAppOrder(){
+const entries = Object.entries(cart);
+if(entries.length === 0) return;
+
+let total = 0;
+
+const products = entries.map(([id,qty])=>{
+const plant = plants.find(p=>p.id == id);
+const subtotal = plant.price * qty;
+total += subtotal;
+return `• ${plant.name} x${qty} = $${subtotal.toLocaleString('es-CL')}`;
+}).join('%0A');
+
+const text = `🌿 Hola, quiero realizar el siguiente pedido:%0A%0A${products}%0A%0A💰 Total: $${total.toLocaleString('es-CL')}%0A%0A📍 Vivero Raíces de Petorca`;
+
+window.open(`https://wa.me/56971505118?text=${text}`,'_blank');
 }
 
 function showToast(){
